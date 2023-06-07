@@ -26,6 +26,26 @@ async function run() {
     const usersCollection = client.db("artInnovators").collection("users");
     const classesCollection = client.db("artInnovators").collection("classes");
 
+    //create users
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user?.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        if (existingUser.password === user.password) {
+          return res.send({
+            message: "password matched.try again with another",
+          });
+        }
+        return res.send({
+          message: "user email allready exist",
+        });
+      }
+      const result = await usersCollection.insertOne(user);
+      console.log(result);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
