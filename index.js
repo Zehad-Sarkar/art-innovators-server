@@ -25,6 +25,9 @@ async function run() {
 
     const usersCollection = client.db("artInnovators").collection("users");
     const classesCollection = client.db("artInnovators").collection("classes");
+    const instructorsCollection = client
+      .db("artInnovators")
+      .collection("instructorClasses");
 
     //create users
     app.post("/users", async (req, res) => {
@@ -72,10 +75,16 @@ async function run() {
       res.send(result);
     });
 
+    //all classes get from database homepage classes
+    app.get("/allClasses", async (req, res) => {
+      const result = await instructorsCollection.find().toArray();
+      res.send(result)
+    });
+
     //add a class for instructor stored on database
     app.post("/addclass", async (req, res) => {
       const addClasses = req.body;
-      const result = await classesCollection.insertOne(addClasses);
+      const result = await instructorsCollection.insertOne(addClasses);
       console.log(result);
       res.send(result);
     });
