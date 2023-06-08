@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -42,7 +42,33 @@ async function run() {
         });
       }
       const result = await usersCollection.insertOne(user);
-      console.log(result);
+      res.send(result);
+    });
+
+    //get users for admin, instructor, student check
+    app.get("/users", async (req, res) => {
+      const query = await usersCollection.findOne({ email: req.query.email });
+      res.send(query);
+    });
+
+    //users selected classes stored on database
+    app.post("/classes", async (req, res) => {
+      const query = req.body;
+      const result = await classesCollection.insertOne(query);
+      res.send(result);
+    });
+
+    //students dashboard my classes get from database
+    app.get("/myclasses", async (req, res) => {
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    });
+
+    //students dashboard my class delete from database
+    app.delete("/myclass/delete/:id", async (req, res) => {
+      const result = await classesCollection.deleteOne({
+        _id: new ObjectId(req.params.id),
+      });
       res.send(result);
     });
 
