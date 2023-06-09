@@ -78,13 +78,20 @@ async function run() {
     //all classes get from database homepage classes
     app.get("/allClasses", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
-      res.send(result)
+      res.send(result);
     });
 
     //add a class for instructor stored on database
     app.post("/addclass", async (req, res) => {
       const addClasses = req.body;
       const result = await instructorsCollection.insertOne(addClasses);
+      res.send(result);
+    });
+
+    //get instructor classes for instructor dashboard my class
+    app.get("/myclass", async (req, res) => {
+      const email = { email: req.query.email };
+      const result = await instructorsCollection.find(email).toArray();
       console.log(result);
       res.send(result);
     });
