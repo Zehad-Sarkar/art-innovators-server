@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
+const stripe = require("stripe")(process.env.PAYMENT_SECRET);
 const port = process.env.PORT || 5000;
 
 // middlewares
@@ -28,6 +29,12 @@ async function run() {
     const instructorsCollection = client
       .db("artInnovators")
       .collection("instructorClasses");
+    const paymentsCollection = client
+      .db("artInnovators")
+      .collection("payments");
+    const enrolledCollection = client
+      .db("artInnovators")
+      .collection("enrolled");
 
     //create users
     app.post("/users", async (req, res) => {
@@ -63,7 +70,9 @@ async function run() {
 
     //students dashboard my classes get from database
     app.get("/myclasses", async (req, res) => {
-      const result = await classesCollection.find().toArray();
+      const result = await classesCollection
+        .find({ email: req.query.email })
+        .toArray();
       res.send(result);
     });
 
@@ -92,7 +101,85 @@ async function run() {
     app.get("/myclass", async (req, res) => {
       const email = { email: req.query.email };
       const result = await instructorsCollection.find(email).toArray();
-      console.log(result);
+      res.send(result);
+    });
+
+    //load all users for admin manage users
+    app.get("/allUsers", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    //updating user role make admin by update from admin dashboard by admin
+    app.put("/makeAdmin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    //updating user role make instructor by update dashboard by admin
+    app.put("/makeInstructor/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "instructor",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    //load instructors classes for manage classes by admin in admin dashboard
+    app.get("/manageClasses", async (req, res) => {
+      const result = await instructorsCollection.find().toArray();
+      res.send(result);
+    });
+
+    //payment stipe impliment here
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
+
+    //payment api to save database ,remove classes ,enrolled added
+    app.post("/payments", async (req, res) => {
+      const paymentInfo = req.body;
+      const insertResult = await paymentsCollection.insertOne(paymentInfo);
+      const query = {
+        _id: { $in: paymentInfo.classesId.map((id) => new ObjectId(id)) },
+      };
+      const removeResult = await classesCollection.deleteMany(query);
+      const enrolledResult = await enrolledCollection.insertOne(paymentInfo);
+      res.send({ insertResult, removeResult, enrolledResult });
+    });
+
+    //enrolled classes get from database
+    app.get("/enrolledClasses", async (req, res) => {
+      const result = await enrolledCollection
+        .find({ email: req.query.email })
+        .toArray();
+      res.send(result);
+    });
+
+    //data load for payment history
+    app.get("/paymentHistory", async (req, res) => {
+      const result = await paymentsCollection
+        .find({ email: req.query.email })
+        .sort({ date: -1 })
+        .toArray();
       res.send(result);
     });
 
