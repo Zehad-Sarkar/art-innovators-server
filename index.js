@@ -35,6 +35,9 @@ async function run() {
     const enrolledCollection = client
       .db("artInnovators")
       .collection("enrolled");
+    const feedbackCollection = client
+      .db("artInnovators")
+      .collection("feedback");
 
     //create users
     app.post("/users", async (req, res) => {
@@ -142,6 +145,12 @@ async function run() {
       res.send(result);
     });
 
+    //stored feedback
+    app.post("/feedback", async (req, res) => {
+      const result = await feedbackCollection.insertOne(req.body);
+      res.send(result);
+    });
+
     //payment stipe impliment here
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
@@ -171,6 +180,31 @@ async function run() {
       const result = await enrolledCollection
         .find({ email: req.query.email })
         .toArray();
+      res.send(result);
+    });
+
+    //total enroll classes by classes name
+    app.get("/enrolledNumber", async (req, res) => {
+      const classesName = req.query.classesName;
+      const query = { classesName: classesName };
+      const result = await enrolledCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    //update class
+    app.patch("/dashboard/updateClass/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const newUpdates = req.body;
+      const updateDoc = {
+        $set: {
+          price: newUpdates.price,
+          image: newUpdates.image,
+          classesName: newUpdates.classesName,
+          seats: newUpdates.seats,
+        },
+      };
+      const result = await instructorsCollection.updateOne(query, updateDoc);
       res.send(result);
     });
 
