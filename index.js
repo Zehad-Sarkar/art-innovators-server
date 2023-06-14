@@ -39,7 +39,7 @@ async function run() {
       .db("artInnovators")
       .collection("feedback");
 
-    //create users
+    //create  users stored database
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user?.email };
